@@ -1,10 +1,10 @@
 {
-	"id": "table-doctor",
-	"name": "Table Doctor",
-	"version": "0.2.1",
-	"minAppVersion": "1.0.0",
-	"description": "Automatically fixes broken markdown tables by removing blank lines between table rows. Tables with blank lines between rows don't render in Obsidian — this plugin detects and collapses them on save, paste, or command.",
-	"author": "robertoecf",
-	"authorUrl": "https://github.com/robertoecf",
-	"isDesktopOnly": false
+  "id": "table-doctor",
+  "name": "Table Doctor",
+  "version": "0.2.1",
+  "minAppVersion": "1.0.0",
+  "description": "Automatically fixes broken markdown tables by removing blank lines between table rows. Detects and collapses them on save, paste, or via command so your tables render correctly.",
+  "author": "robertoecf",
+  "authorUrl": "https://github.com/robertoecf",
+  "isDesktopOnly": false
 }
