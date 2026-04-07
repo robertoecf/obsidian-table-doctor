@@ -325,13 +325,6 @@ class DiffPreviewModal extends Modal {
 
 		// Diff view — only show lines near removals for context
 		const container = contentEl.createDiv({ cls: "table-doctor-diff" });
-		container.style.fontFamily = "monospace";
-		container.style.fontSize = "12px";
-		container.style.maxHeight = "400px";
-		container.style.overflow = "auto";
-		container.style.border = "1px solid var(--background-modifier-border)";
-		container.style.borderRadius = "4px";
-		container.style.padding = "8px";
 
 		const CONTEXT = 2;
 		const visibleLines = new Set<number>();
@@ -350,9 +343,7 @@ class DiffPreviewModal extends Modal {
 			if (!visibleLines.has(i)) continue;
 
 			if (lastShown >= 0 && i - lastShown > 1) {
-				const sep = container.createDiv();
-				sep.style.color = "var(--text-muted)";
-				sep.style.padding = "2px 0";
+				const sep = container.createDiv({ cls: "table-doctor-diff-separator" });
 				sep.textContent = "  ···";
 			}
 
@@ -362,11 +353,10 @@ class DiffPreviewModal extends Modal {
 			const displayText = entry.text || " ";
 
 			if (entry.type === "remove") {
-				line.style.backgroundColor = "rgba(255, 0, 0, 0.1)";
-				line.style.color = "var(--text-error)";
+				line.addClass("table-doctor-diff-remove");
 				line.textContent = `${numStr} - ${displayText}`;
 			} else {
-				line.style.color = "var(--text-normal)";
+				line.addClass("table-doctor-diff-context");
 				line.textContent = `${numStr}   ${displayText}`;
 			}
 
@@ -374,11 +364,7 @@ class DiffPreviewModal extends Modal {
 		}
 
 		// Buttons
-		const buttonRow = contentEl.createDiv();
-		buttonRow.style.display = "flex";
-		buttonRow.style.gap = "8px";
-		buttonRow.style.marginTop = "16px";
-		buttonRow.style.justifyContent = "flex-end";
+		const buttonRow = contentEl.createDiv({ cls: "table-doctor-button-row" });
 
 		const cancelBtn = buttonRow.createEl("button", { text: "Cancel" });
 		cancelBtn.addEventListener("click", () => this.close());
@@ -413,7 +399,7 @@ export default class TableDoctorPlugin extends Plugin {
 		this.updateStatusBar("idle");
 
 		// ── Ribbon icon ──
-		this.addRibbonIcon("stethoscope", "Table Doctor: Fix current file", () => {
+		this.addRibbonIcon("stethoscope", "Table Doctor: fix current file", () => {
 			const view = this.app.workspace.getActiveViewOfType(MarkdownView);
 			if (view) {
 				this.fixEditor(view.editor);
@@ -599,36 +585,38 @@ export default class TableDoctorPlugin extends Plugin {
 					clearTimeout(existingTimeout);
 				}
 
-				const timeout = setTimeout(async () => {
-					this.modifyTimeouts.delete(file.path);
-					if (this.processingFiles.has(file.path)) return;
-					this.processingFiles.add(file.path);
+				const timeout = setTimeout(() => {
+					void (async () => {
+						this.modifyTimeouts.delete(file.path);
+						if (this.processingFiles.has(file.path)) return;
+						this.processingFiles.add(file.path);
 
-					try {
-						await this.app.vault.process(file, (content) => {
-							try {
-								const fixed = fixBrokenTables(content);
-								if (fixed !== null) {
-									if (this.settings.showNotice) {
-										new Notice(`Table Doctor: fixed ${file.name}`);
+						try {
+							await this.app.vault.process(file, (content) => {
+								try {
+									const fixed = fixBrokenTables(content);
+									if (fixed !== null) {
+										if (this.settings.showNotice) {
+											new Notice(`Table Doctor: fixed ${file.name}`);
+										}
+										this.updateStatusBar("fixed", file.name);
+										return fixed;
 									}
-									this.updateStatusBar("fixed", file.name);
-									return fixed;
+									return content;
+								} catch (e) {
+									console.error(`Table Doctor: fix failed for ${file.path}:`, e);
+									return content;
 								}
-								return content;
-							} catch (e) {
-								console.error(`Table Doctor: fix failed for ${file.path}:`, e);
-								return content;
-							}
-						});
-					} catch (e) {
-						console.error("Table Doctor:", e);
-						this.updateStatusBar("error");
-					} finally {
-						setTimeout(() => {
-							this.processingFiles.delete(file.path);
-						}, 2000);
-					}
+							});
+						} catch (e) {
+							console.error("Table Doctor:", e);
+							this.updateStatusBar("error");
+						} finally {
+							setTimeout(() => {
+								this.processingFiles.delete(file.path);
+							}, 2000);
+						}
+					})();
 				}, 500);
 
 				this.modifyTimeouts.set(file.path, timeout);
@@ -675,34 +663,36 @@ export default class TableDoctorPlugin extends Plugin {
 				if (this.processingFiles.has(file.path)) return;
 
 				// Small delay to let the editor fully load
-				setTimeout(async () => {
-					if (this.processingFiles.has(file.path)) return;
-					this.processingFiles.add(file.path);
+				setTimeout(() => {
+					void (async () => {
+						if (this.processingFiles.has(file.path)) return;
+						this.processingFiles.add(file.path);
 
-					try {
-						await this.app.vault.process(file, (content) => {
-							try {
-								const fixed = fixBrokenTables(content);
-								if (fixed !== null) {
-									if (this.settings.showNotice) {
-										new Notice(`Table Doctor: fixed ${file.name} on open`);
+						try {
+							await this.app.vault.process(file, (content) => {
+								try {
+									const fixed = fixBrokenTables(content);
+									if (fixed !== null) {
+										if (this.settings.showNotice) {
+											new Notice(`Table Doctor: fixed ${file.name} on open`);
+										}
+										this.updateStatusBar("fixed", file.name);
+										return fixed;
 									}
-									this.updateStatusBar("fixed", file.name);
-									return fixed;
+									return content;
+								} catch (e) {
+									console.error(`Table Doctor: fix failed for ${file.path}:`, e);
+									return content;
 								}
-								return content;
-							} catch (e) {
-								console.error(`Table Doctor: fix failed for ${file.path}:`, e);
-								return content;
-							}
-						});
-					} catch (e) {
-						console.error("Table Doctor:", e);
-					} finally {
-						setTimeout(() => {
-							this.processingFiles.delete(file.path);
-						}, 2000);
-					}
+							});
+						} catch (e) {
+							console.error("Table Doctor:", e);
+						} finally {
+							setTimeout(() => {
+								this.processingFiles.delete(file.path);
+							}, 2000);
+						}
+					})();
 				}, 300);
 			})
 		);
@@ -797,13 +787,12 @@ class TableDoctorSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl("h2", { text: "Table Doctor" });
-		containerEl.createEl("p", {
-			text: "Automatically removes blank lines between markdown table rows so tables render correctly in Obsidian.",
-		});
+		new Setting(containerEl)
+			.setName("Table Doctor")
+			.setDesc("Automatically removes blank lines between markdown table rows so tables render correctly.")
+			.setHeading();
 
-		// ── Triggers ──
-		containerEl.createEl("h3", { text: "Triggers" });
+		new Setting(containerEl).setName("Triggers").setHeading();
 
 		new Setting(containerEl)
 			.setName("Fix on save")
@@ -841,8 +830,7 @@ class TableDoctorSettingTab extends PluginSettingTab {
 					})
 			);
 
-		// ── Behavior ──
-		containerEl.createEl("h3", { text: "Behavior" });
+		new Setting(containerEl).setName("Behavior").setHeading();
 
 		new Setting(containerEl)
 			.setName("Show notices")

@@ -1,0 +1,30 @@
+.table-doctor-diff {
+    font-family: monospace;
+    font-size: 12px;
+    max-height: 400px;
+    overflow: auto;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    padding: 8px;
+}
+
+.table-doctor-diff-separator {
+    color: var(--text-muted);
+    padding: 2px 0;
+}
+
+.table-doctor-diff-remove {
+    background-color: rgba(255, 0, 0, 0.1);
+    color: var(--text-error);
+}
+
+.table-doctor-diff-context {
+    color: var(--text-normal);
+}
+
+.table-doctor-button-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    justify-content: flex-end;
+}
