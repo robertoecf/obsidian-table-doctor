@@ -232,7 +232,7 @@ function fixBrokenTables(content: string): string | null {
  * Uses greedy matching: walks both arrays in lockstep.
  */
 function buildLineMapping(original: string[], fixed: string[]): number[] {
-	const mapping: number[] = new Array(original.length).fill(-1);
+	const mapping: number[] = new Array<number>(original.length).fill(-1);
 	let fixedIdx = 0;
 
 	for (let origIdx = 0; origIdx < original.length; origIdx++) {
@@ -316,7 +316,7 @@ class DiffPreviewModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 
-		contentEl.createEl("h3", { text: `Table Doctor: ${this.fileName}` });
+		contentEl.createEl("h3", { text: `Preview fixes: ${this.fileName}` });
 
 		const removedCount = this.diff.filter((d) => d.type === "remove").length;
 		contentEl.createEl("p", {
@@ -399,12 +399,12 @@ export default class TableDoctorPlugin extends Plugin {
 		this.updateStatusBar("idle");
 
 		// ── Ribbon icon ──
-		this.addRibbonIcon("stethoscope", "Table Doctor: fix current file", () => {
+		this.addRibbonIcon("stethoscope", "Fix tables in current file", () => {
 			const view = this.app.workspace.getActiveViewOfType(MarkdownView);
 			if (view) {
 				this.fixEditor(view.editor);
 			} else {
-				new Notice("Table Doctor: no active markdown file");
+				new Notice("No active Markdown file");
 			}
 		});
 
@@ -445,17 +445,17 @@ export default class TableDoctorPlugin extends Plugin {
 		if (!this.statusBarEl) return;
 		switch (state) {
 			case "idle":
-				this.statusBarEl.textContent = "TD: ready";
+				this.statusBarEl.textContent = "Tables OK";
 				break;
 			case "fixing":
-				this.statusBarEl.textContent = "TD: fixing...";
+				this.statusBarEl.textContent = "Fixing tables…";
 				break;
 			case "fixed":
-				this.statusBarEl.textContent = `TD: ${detail || "fixed"}`;
+				this.statusBarEl.textContent = detail || "Tables fixed";
 				setTimeout(() => this.updateStatusBar("idle"), 3000);
 				break;
 			case "error":
-				this.statusBarEl.textContent = `TD: error`;
+				this.statusBarEl.textContent = "Fix failed";
 				setTimeout(() => this.updateStatusBar("idle"), 5000);
 				break;
 		}
@@ -471,7 +471,7 @@ export default class TableDoctorPlugin extends Plugin {
 
 		if (fixed === null) {
 			if (this.settings.showNotice) {
-				new Notice("Table Doctor: all tables OK");
+				new Notice("All tables are clean");
 			}
 			this.updateStatusBar("fixed", "all OK");
 			return;
@@ -492,7 +492,7 @@ export default class TableDoctorPlugin extends Plugin {
 
 		const removedCount = originalLines.length - fixedLines.length;
 		if (this.settings.showNotice) {
-			new Notice(`Table Doctor: removed ${removedCount} blank line(s)`);
+			new Notice(`Removed ${removedCount} blank line(s) from tables`);
 		}
 		this.updateStatusBar("fixed", `${removedCount} lines removed`);
 	}
@@ -505,7 +505,7 @@ export default class TableDoctorPlugin extends Plugin {
 		const fixed = fixBrokenTables(content);
 
 		if (fixed === null) {
-			new Notice("Table Doctor: all tables OK, nothing to fix");
+			new Notice("All tables are clean, nothing to fix");
 			return;
 		}
 
@@ -558,8 +558,8 @@ export default class TableDoctorPlugin extends Plugin {
 		}
 
 		let msg = fixedCount > 0
-			? `Table Doctor: fixed ${fixedCount} file(s)`
-			: "Table Doctor: all tables OK";
+			? `Fixed tables in ${fixedCount} file(s)`
+			: "All tables are clean";
 		if (errorCount > 0) {
 			msg += ` (${errorCount} errors)`;
 		}
@@ -597,7 +597,7 @@ export default class TableDoctorPlugin extends Plugin {
 									const fixed = fixBrokenTables(content);
 									if (fixed !== null) {
 										if (this.settings.showNotice) {
-											new Notice(`Table Doctor: fixed ${file.name}`);
+											new Notice(`Fixed tables in ${file.name}`);
 										}
 										this.updateStatusBar("fixed", file.name);
 										return fixed;
@@ -642,7 +642,7 @@ export default class TableDoctorPlugin extends Plugin {
 						evt.preventDefault();
 						editor.replaceSelection(fixed);
 						if (this.settings.showNotice) {
-							new Notice("Table Doctor: fixed pasted table");
+							new Notice("Fixed pasted table");
 						}
 						this.updateStatusBar("fixed", "paste");
 					}
@@ -674,7 +674,7 @@ export default class TableDoctorPlugin extends Plugin {
 									const fixed = fixBrokenTables(content);
 									if (fixed !== null) {
 										if (this.settings.showNotice) {
-											new Notice(`Table Doctor: fixed ${file.name} on open`);
+											new Notice(`Fixed tables in ${file.name}`);
 										}
 										this.updateStatusBar("fixed", file.name);
 										return fixed;
@@ -740,7 +740,7 @@ export default class TableDoctorPlugin extends Plugin {
 		this.settings = Object.assign(
 			{},
 			DEFAULT_SETTINGS,
-			await this.loadData()
+			(await this.loadData()) as Partial<TableDoctorSettings> ?? {}
 		);
 		this.updateExcludedFolders();
 	}
@@ -787,11 +787,6 @@ class TableDoctorSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		new Setting(containerEl)
-			.setName("Table Doctor")
-			.setDesc("Automatically removes blank lines between markdown table rows so tables render correctly.")
-			.setHeading();
-
 		new Setting(containerEl).setName("Triggers").setHeading();
 
 		new Setting(containerEl)
@@ -820,7 +815,7 @@ class TableDoctorSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Fix on file open")
-			.setDesc("Fix tables when opening a file. Catches files from sync or git.")
+			.setDesc("Automatically fix tables when opening a file, useful for synced or Git-tracked files.")
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.fixOnOpen)
@@ -851,7 +846,7 @@ class TableDoctorSettingTab extends PluginSettingTab {
 			)
 			.addText((text) =>
 				text
-					.setPlaceholder("Templates, Archive")
+					.setPlaceholder("Templates, archive")
 					.setValue(this.plugin.settings.excludedFolders)
 					.onChange(async (value) => {
 						this.plugin.settings.excludedFolders = value;
