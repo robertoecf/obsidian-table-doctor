@@ -77,11 +77,7 @@ All settings are accessible via **Settings > Table Doctor**.
 
 ## Installation
 
-### From Community Plugins (recommended)
-
-1. Open **Settings > Community Plugins**
-2. Click **Browse** and search for **"Table Doctor"**
-3. Click **Install**, then **Enable**
+Table Doctor is not listed in Obsidian's Community Plugins directory yet, so searching for it under **Settings > Community Plugins > Browse** will not find it. Install it manually:
 
 ### Manual Installation
 
